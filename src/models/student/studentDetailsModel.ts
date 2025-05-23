@@ -6,7 +6,8 @@ interface User {
   email: string;
   password: string;
   mobileNumber: number;
-  grade: number;
+  grade: mongoose.Schema.Types.ObjectId;
+  addedBy: mongoose.Types.ObjectId;
   isDeleted: boolean;
 }
 
@@ -31,7 +32,12 @@ const User = new mongoose.Schema<User>(
       required: true,
     },
     grade: {
-      type: Number,
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
+    addedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Teacher",
       required: true,
     },
     isDeleted: {
@@ -43,5 +49,5 @@ const User = new mongoose.Schema<User>(
     timestamps: true,
   }
 );
-const studentModel = model<User>("User", User);
+const studentModel = model<User>("Student", User);
 export default studentModel;

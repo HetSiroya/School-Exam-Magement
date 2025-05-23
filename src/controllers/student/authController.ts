@@ -1,43 +1,49 @@
 import express from "express";
-import { Response, Request, NextFunction } from "express";
-import teacherModel from "../../models/teachers/teacherDetailModel";
+import { Response, Request } from "express";
+import studentModel from "../../models/student/studentDetailsModel";
 import { comparePassword } from "../../helpers/hased";
 import generateToken from "../../helpers/token";
 
 export const login = async (req: Request, res: Response) => {
   try {
     const { mobileNumber, password } = req.body;
-    const exist = await teacherModel.findOne({ mobileNumber });
-    if (!exist) {
+    const user = await studentModel.findOne({
+      mobileNumber: mobileNumber,
+    });
+    if (!user) {
       return res.status(400).json({
         status: 400,
-        message: "user not found",
+        message: "User not found",
         data: "",
       });
     }
-    const isPassword = await comparePassword(password, exist.password);
-    if (!isPassword) {
+    const check = await comparePassword(
+      String(password),
+      String(user.password)
+    );
+    if (!check) {
       return res.status(400).json({
         status: 400,
-        message: "password doesn't match",
+        message: "Password doesn't match",
         data: "",
       });
     }
     const tokenUser = {
-      _id: exist._id.toString(),
-      email: exist.email,
-      name: exist.name,
-      mobileNumber: exist.mobileNumber,
+      _id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      mobileNumber: user.mobileNumber,
     };
     const token = generateToken(tokenUser);
     return res.status(200).json({
       status: 200,
-      message: "Succesfully",
-      data: tokenUser,
+      message: "Login successfully",
+      data: user,
       token: token,
     });
-  } catch (error) {
-    console.log("Error", error);
+  } catch (error: any) {
+    console.log("Error", error.message);
+
     return res.status(400).json({
       status: 400,
       message: "somethig Went wrong",

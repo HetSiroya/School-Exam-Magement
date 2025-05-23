@@ -5,6 +5,9 @@ import { checkRequiredFields } from "../../helpers/commonValidator";
 import teacherModel from "../../models/teachers/teacherDetailModel";
 import { CustomRequest } from "../../middlewares/token-decode";
 import adminModel from "../../models/admin/adminDetailsModel";
+import { hashPassword } from "../../helpers/hased";
+import { generatePassword } from "../../helpers/passwordGenerator";
+import sendEmail from "../../helpers/sendMail";
 
 const router = express.Router();
 
@@ -19,17 +22,52 @@ export const addTeacher = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
-    const { name, email, password, mobileNumber } = req.body;
-    const requiredFields = ["name", "email", "password", "mobileNumber"];
+
+    const { name, email, mobileNumber } = req.body;
+    const userExist = await teacherModel.findOne({
+      $or: [{ email: email }, { mobileNumber: mobileNumber }],
+    });
+    if (userExist) {
+      return res.status(400).json({
+        status: 400,
+        message: "user already exist",
+        data: "",
+      });
+    }
+    const password = generatePassword();
+    const requiredFields = ["name", "email", "mobileNumber"];
     const validationError = checkRequiredFields(req.body, requiredFields);
+    const hasedPassword = await hashPassword(String(password));
     const newTeacher = new teacherModel({
       addedBy: req.user._id,
       name: name,
       mobileNumber: mobileNumber,
       email: email,
-      password: password,
+      password: hasedPassword,
     });
+    console.log("password", password);
     await newTeacher.save();
+    sendEmail(
+      email,
+      "added as teacher",
+      `Dear ${name},
+
+Welcome ! We are glad to have you join our teaching team.
+
+Your account has been successfully created. Below are your login details:
+
+Username: ${newTeacher.mobileNumber}  
+Password: ${password}
+For your security, we recommend changing your password after your first login.
+
+If you have any questions or need help getting started, feel free to reach out to us.
+
+Best regards,  
+${exist.name}
+Email: admin@school.com  
+Phone: +91-12345-67890
+`
+    );
     return res.status(200).json({
       status: 200,
       message: "Succesfully",

@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 const router = express.Router();
-import { login } from "../../controllers/teacher/teacherAuthController";
+import { login } from "../../controllers/student/authController";
 
 router.post("/login", async (req, res, next) => {
   try {

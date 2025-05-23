@@ -1,10 +1,13 @@
 import express from "express";
 import { Response, Request, NextFunction } from "express";
 import { checkRequiredFields } from "../../helpers/commonValidator";
-
 import studentModel from "../../models/student/studentDetailsModel";
 import { CustomRequest } from "../../middlewares/token-decode";
 import teacherModel from "../../models/teachers/teacherDetailModel";
+import { hashPassword } from "../../helpers/hased";
+import { generatePassword } from "../../helpers/passwordGenerator";
+import sendEmail from "../../helpers/sendMail";
+import gradeModel from "../../models/admin/gradeModel";
 
 export const addStudent = async (req: CustomRequest, res: Response) => {
   try {
@@ -17,17 +20,75 @@ export const addStudent = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
-    const { name, email, password, mobileNumber } = req.body;
-    const requiredFields = ["name", "email", "password", "mobileNumber"];
+    const { name, email, mobileNumber, grade } = req.body;
+    const gradeExist = await gradeModel.findById(grade);
+    if (!gradeExist) {
+      return res.status(400).json({
+        status: 400,
+        message: "grade not found",
+        data: "",
+      });
+    }
+    const userExist = await studentModel.findOne({
+      $or: [{ email: email }, { mobileNumber: mobileNumber }],
+    });
+    if (userExist) {
+      return res.status(400).json({
+        status: 400,
+        message: "user already exist",
+        data: "",
+      });
+    }
+    const password = generatePassword();
+    const requiredFields = ["name", "email", "grade", "mobileNumber"];
     const validationError = checkRequiredFields(req.body, requiredFields);
+    const hasedPassword = await hashPassword(String(password));
+    const existingStudent = await studentModel.findOne({
+      $or: [{ email: email }, { mobileNumber: mobileNumber }],
+    });
+    if (existingStudent) {
+      return res.status(400).json({
+        status: 400,
+        message: "Student already exists",
+        data: "",
+      });
+    }
+
     const newStudent = new studentModel({
-      addedBy: req.user._id,
+      addedBy: userId,
       name: name,
       mobileNumber: mobileNumber,
       email: email,
-      password: password,
+      password: hasedPassword,
+      grade: grade,
     });
     await newStudent.save();
+    sendEmail(
+      email,
+      "added as student",
+      `Dear ${name},
+
+Welcome ! Your student account has been successfully created.
+
+Here are your login details:
+
+Username: ${newStudent.mobileNumber}  
+Password: ${password}
+
+
+Please change your password after your first login to keep your account secure.
+
+If you face any issues or have questions, feel free to contact the school administration.
+
+Wishing you a great academic journey!
+
+Best regards,  
+${exist.name}
+Email: admin@school.com  
+Phone: +91-12345-67890
+`
+    );
+    console.log("password", password);
     return res.status(200).json({
       status: 200,
       message: "Succesfully",
@@ -54,7 +115,7 @@ export const editStudent = async (req: CustomRequest, res: Response) => {
       });
     }
     const userId = req.user._id;
-    const teachedId = req.params.id;
+    const studentId = req.params.id;
     const exist = await teacherModel.findById(userId);
     if (!exist) {
       return res.status(400).json({
@@ -63,15 +124,20 @@ export const editStudent = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
-    const { name, email, password, mobileNumber } = req.body;
+    // Destructure all required fields
+    const { name, email, password, mobileNumber, grade } = req.body;
+
+    // Only include fields that are present in the request
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (password !== undefined) updateData.password = password;
+    if (mobileNumber !== undefined) updateData.mobileNumber = mobileNumber;
+    if (grade !== undefined) updateData.grade = grade;
+
     const newStudent = await studentModel.findByIdAndUpdate(
-      teachedId,
-      {
-        name: name,
-        mobileNumber: mobileNumber,
-        email: email,
-        password: password,
-      },
+      studentId,
+      updateData,
       { new: true }
     );
 
@@ -84,7 +150,7 @@ export const editStudent = async (req: CustomRequest, res: Response) => {
     console.log("Error", error);
     return res.status(400).json({
       status: 400,
-      message: "somethig Went wrong",
+      message: "something Went wrong",
       data: "",
     });
   }

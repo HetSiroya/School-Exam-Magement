@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import { model } from "mongoose";
+  import mongoose from "mongoose";
+  import { model } from "mongoose";
 
 interface User {
   name: string;
