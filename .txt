@@ -1,0 +1,12 @@
+School Exam Management
+----------------------------
+Admin can add/edit/delete standard
+Admin can add/edit/delete teacher
+Tearcher can add/edit/delete student
+Tearcher can exam standard wise with question like MCQ, Yes/No, etc, also set time limit for exam
+User can login
+Select exam and complete all the question
+Generate Result
+
+
+aama me overview add kayru che only but aama requirement pramane vadhare detail ke functionality add karvi pade to kari deje
