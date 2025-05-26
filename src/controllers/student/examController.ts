@@ -155,7 +155,6 @@ export const getExamQuestion = async (req: CustomRequest, res: Response) => {
 
 export const submitAnswer = async (req: CustomRequest, res: Response) => {
   try {
-    let score = 0;
     const userId = req.user._id;
     const user = await studentModel.findById(userId);
     if (!user) {
@@ -183,6 +182,17 @@ export const submitAnswer = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
+
+    // Check if exam is still ongoing
+    const now = new Date();
+    if (now < exam.startTime || now > exam.endTime) {
+      return res.status(403).json({
+        status: 403,
+        message: "Exam time has expired",
+        data: "",
+      });
+    }
+
     // Check if the student has already answered this question
     const alreadyAnswered = await answerModel.findOne({
       examId: question.examId,
@@ -196,24 +206,45 @@ export const submitAnswer = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
-    const { answer } = req.body;
-    if (!answer) {
+
+    const { answers } = req.body;
+    if (!answers || !Array.isArray(answers)) {
       return res.status(400).json({
         status: 400,
-        message: "Answer is required",
+        message: "Answers must be provided as an array",
         data: "",
       });
     }
-    // Check if the answer is correct
-    if (question.answer === answer) {
-      score += question.mark;
+
+    // Calculate score based on answers
+    let score = 0;
+    const correctAnswers = question.answers;
+    const studentAnswers = answers;
+
+    // Check if all answers are correct
+    const allCorrect = correctAnswers.every((answer) =>
+      studentAnswers.includes(answer)
+    );
+
+    // Check if some answers are correct
+    const someCorrect = studentAnswers.some((answer) =>
+      correctAnswers.includes(answer)
+    );
+
+    if (allCorrect) {
+      // All answers are correct - full marks
+      score = question.mark;
+    } else if (someCorrect) {
+      // Some answers are correct - half marks
+      score = question.mark / 2;
     }
+    // If no correct answers, score remains 0
 
     const newattempt = new answerModel({
       examId: question.examId,
       studentId: userId,
       questionId: questionId,
-      answer: answer,
+      answers: answers, // Store all answers
       score: score,
     });
     await newattempt.save();
@@ -223,6 +254,59 @@ export const submitAnswer = async (req: CustomRequest, res: Response) => {
       data: {
         questionId: questionId,
         score: score,
+        totalPossibleMarks: question.mark,
+      },
+    });
+  } catch (error: any) {
+    console.log("Error", error.message);
+    return res.status(400).json({
+      status: 400,
+      message: "Something went wrong",
+      data: "",
+    });
+  }
+};
+
+export const getExamResult = async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user._id;
+    let examMark = 0;
+    const user = await studentModel.findById(userId);
+    if (!user) {
+      return res.status(400).json({
+        status: 400,
+        message: "User not found",
+        data: "",
+      });
+    }
+    const examId = req.params.examId;
+    const answers = await answerModel.find({
+      examId: examId,
+      studentId: userId,
+    });
+    const question = await questionModel.find({ examId: examId });
+    question.forEach((question) => {
+      examMark += question.mark;
+    });
+    if (!answers || answers.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: "No answers found for this exam",
+        data: "",
+      });
+    }
+    let totalScore = 0;
+    answers.forEach((answer) => {
+      totalScore += answer.score;
+    });
+    return res.status(200).json({
+      status: 200,
+      message: "Exam result retrieved successfully",
+      data: {
+        examMark: examMark,
+        examId: examId,
+        totalScore: totalScore,
+        answers: answers,
       },
     });
   } catch (error: any) {

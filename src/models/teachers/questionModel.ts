@@ -5,7 +5,7 @@ interface IQuestion {
   examId: mongoose.Types.ObjectId;
   question: string;
   options: string[];
-  answer: string;
+  answers: string[];
   mark: number;
 }
 
@@ -24,8 +24,8 @@ const questionSchema = new mongoose.Schema<IQuestion>(
       type: [String],
       required: true,
     },
-    answer: {
-      type: String,
+    answers: {
+      type: [String],
       required: true,
     },
     mark: {

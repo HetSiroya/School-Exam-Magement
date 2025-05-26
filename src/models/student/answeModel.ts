@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
-import { Model, Schema } from "mongoose";
 
 interface IAnswer {
   examId: mongoose.Types.ObjectId;
   studentId: mongoose.Types.ObjectId;
   questionId: mongoose.Types.ObjectId;
+  answers: string[];
   score: number;
 }
 
-const answerSchema = new Schema<IAnswer>(
+const answerSchema = new mongoose.Schema<IAnswer>(
   {
     examId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -25,8 +25,13 @@ const answerSchema = new Schema<IAnswer>(
       ref: "Question",
       required: true,
     },
+    answers: {
+      type: [String],
+      required: true,
+    },
     score: {
       type: Number,
+      required: true,
       default: 0,
     },
   },

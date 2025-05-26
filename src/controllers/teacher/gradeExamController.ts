@@ -110,7 +110,7 @@ export const setQuestion = async (req: CustomRequest, res: Response) => {
       examId: examId,
       question: question,
       options: options,
-      answer: answer,
+      answers: answer,
       mark: mark,
     });
     await newQuestion.save();

@@ -3,6 +3,8 @@ import { auth } from "../../middlewares/token-decode";
 import {
   getAllExam,
   getExamById,
+  getExamQuestion,
+  getExamResult,
   submitAnswer,
 } from "../../controllers/student/examController";
 
@@ -40,5 +42,21 @@ router.post(
   }
 );
 
+router.get("/getExamQuestion/:examId", auth, async (req, res, next) => {
+  try {
+    await getExamQuestion(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+router.get("/getExamResult/:examId", auth, async (req, res, next) => {
+  try {
+    await getExamResult(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;
