@@ -2,18 +2,18 @@ import mongoose from "mongoose";
 import { Response, Request } from "express";
 
 interface IQuestion {
-  by: mongoose.Types.ObjectId;
+  examId: mongoose.Types.ObjectId;
   question: string;
   options: string[];
   answer: string;
-  grade: mongoose.Types.ObjectId;
+  mark: number;
 }
 
 const questionSchema = new mongoose.Schema<IQuestion>(
   {
-    by: {
+    examId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Teacher",
+      ref: "Exam",
       required: true,
     },
     question: {
@@ -28,10 +28,9 @@ const questionSchema = new mongoose.Schema<IQuestion>(
       type: String,
       required: true,
     },
-    grade: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Grade",
-      required: true,
+    mark: {
+      type: Number,
+      default: 1,
     },
   },
   {
