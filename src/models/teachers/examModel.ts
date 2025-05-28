@@ -10,6 +10,10 @@ interface IExam {
   startTime: Date;
   endTime: Date;
   grade: mongoose.Types.ObjectId;
+  totalMarks: number;
+  passingMarks: number;
+  remaningMarksQuestion: number;
+  status: string;
 }
 const examSchema = new mongoose.Schema<IExam>(
   {
@@ -46,6 +50,23 @@ const examSchema = new mongoose.Schema<IExam>(
     endTime: {
       type: Date,
       required: true,
+    },
+    totalMarks: {
+      type: Number,
+      required: true,
+    },
+    passingMarks: {
+      type: Number,
+      required: true,
+    },
+    remaningMarksQuestion: {
+      type: Number,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["live", "completed", "inprogress"],
+      default: "inprogress",
     },
   },
   {

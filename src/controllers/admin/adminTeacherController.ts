@@ -37,6 +37,13 @@ export const addTeacher = async (req: CustomRequest, res: Response) => {
     const password = generatePassword();
     const requiredFields = ["name", "email", "mobileNumber"];
     const validationError = checkRequiredFields(req.body, requiredFields);
+    if (validationError) {
+      return res.status(400).json({
+        status: 400,
+        message: validationError,
+        data: "",
+      });
+    }
     const hasedPassword = await hashPassword(String(password));
     const newTeacher = new teacherModel({
       addedBy: req.user._id,
@@ -104,13 +111,14 @@ export const editTeacher = async (req: CustomRequest, res: Response) => {
       });
     }
     const { name, email, password, mobileNumber } = req.body;
+    const hasedPassword = await hashPassword(String(password));
     const newTeacher = await teacherModel.findByIdAndUpdate(
       teachedId,
       {
         name: name,
         mobileNumber: mobileNumber,
         email: email,
-        password: password,
+        password: hasedPassword,
       },
       { new: true }
     );

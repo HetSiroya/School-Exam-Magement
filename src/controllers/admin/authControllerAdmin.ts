@@ -16,6 +16,23 @@ export const signUp = async (req: Request, res: Response) => {
       "mobileNumber",
     ];
     const validationError = checkRequiredFields(req.body, requiredFields);
+    if (validationError) {
+      return res.status(400).json({
+        status: 400,
+        message: validationError,
+        data: "",
+      });
+    }
+    const exist = await adminModel.findOne({
+      $or: [{ email: email }, { mobileNumber: mobileNumber }],
+    });
+    if (exist) {
+      return res.status(400).json({
+        status: 400,
+        message: "user already exist",
+        data: "",
+      });
+    }
     if (password != confirmPassword) {
       return res.status(400).json({
         status: 400,
@@ -57,13 +74,9 @@ export const signUp = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const { mobileNumber, password } = req.body;
-    // console.log("mobileNumber", mobileNumber);
-    // console.log("password", password);
     const user = await adminModel.findOne({
       mobileNumber: mobileNumber,
     });
-    // console.log("user", user);s
-
     if (!user) {
       return res.status(400).json({
         status: 400,

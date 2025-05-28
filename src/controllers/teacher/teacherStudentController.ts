@@ -9,6 +9,7 @@ import { generatePassword } from "../../helpers/passwordGenerator";
 import sendEmail from "../../helpers/sendMail";
 import gradeModel from "../../models/admin/gradeModel";
 
+// add Student
 export const addStudent = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
@@ -42,6 +43,13 @@ export const addStudent = async (req: CustomRequest, res: Response) => {
     const password = generatePassword();
     const requiredFields = ["name", "email", "grade", "mobileNumber"];
     const validationError = checkRequiredFields(req.body, requiredFields);
+    if (validationError) {
+      return res.status(400).json({
+        status: 400,
+        message: validationError,
+        data: "",
+      });
+    }
     const hasedPassword = await hashPassword(String(password));
     const existingStudent = await studentModel.findOne({
       $or: [{ email: email }, { mobileNumber: mobileNumber }],
@@ -130,8 +138,21 @@ export const editStudent = async (req: CustomRequest, res: Response) => {
     // Only include fields that are present in the request
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
-    if (email !== undefined) updateData.email = email;
-    if (password !== undefined) updateData.password = password;
+    if (email !== undefined) {
+      const emailExist = await studentModel.findOne({
+        email: email,
+      });
+      if (emailExist) {
+        return res.status(400).json({
+          status: 400,
+          message: "Email already exists",
+          data: "",
+        });
+      }
+      updateData.email = email;
+    }
+    if (password !== undefined)
+      updateData.password = await hashPassword(String(password));
     if (mobileNumber !== undefined) updateData.mobileNumber = mobileNumber;
     if (grade !== undefined) updateData.grade = grade;
 

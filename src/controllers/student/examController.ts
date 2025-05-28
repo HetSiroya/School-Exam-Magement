@@ -20,6 +20,7 @@ export const getAllExam = async (req: CustomRequest, res: Response) => {
       });
     }
     const exams = await examModel.find({
+      status: "live",
       grade: user.grade,
     });
     if (!exams || exams.length === 0) {
@@ -64,6 +65,14 @@ export const getExamById = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
+    // Check if the exam is live
+    if (exam.status !== "live") {
+      return res.status(403).json({
+        status: 403,
+        message: "This exam is not currently live",
+        data: "",
+      });
+    }
     if (exam.grade.toString() !== user.grade.toString()) {
       return res.status(403).json({
         status: 403,
@@ -104,6 +113,14 @@ export const getExamQuestion = async (req: CustomRequest, res: Response) => {
       return res.status(404).json({
         status: 404,
         message: "Exam not found",
+        data: "",
+      });
+    }
+    // Check if the exam is live
+    if (exam.status !== "live") {
+      return res.status(403).json({
+        status: 403,
+        message: "This exam is not currently live",
         data: "",
       });
     }
