@@ -11,13 +11,13 @@ export const setExam = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const exist = await teacherModel.findById(userId);
-    if (!exist) {
-      return res.status(400).json({
-        status: 400,
-        message: "user not found",
-        data: "",
-      });
-    }
+    // if (!exist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
     const {
       examName,
       subject,
@@ -100,13 +100,13 @@ export const setQuestion = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const exist = await teacherModel.findById(userId);
-    if (!exist) {
-      return res.status(400).json({
-        status: 400,
-        message: "user not found",
-        data: "",
-      });
-    }
+    // if (!exist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
     const examId = req.params.examId;
     const examExist = await examModel.findById(examId);
     if (!examExist) {
@@ -164,17 +164,17 @@ export const setQuestion = async (req: CustomRequest, res: Response) => {
   }
 };
 
-export const liveExam = async (req: CustomRequest, res: Response) => {
+export const cancelledExam = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const exist = await teacherModel.findById(userId);
-    if (!exist) {
-      return res.status(400).json({
-        status: 400,
-        message: "user not found",
-        data: "",
-      });
-    }
+    // if (!exist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
     const examId = req.params.examId;
     const examExist = await examModel.findById(examId);
     if (!examExist) {
@@ -184,7 +184,7 @@ export const liveExam = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
-    if (examExist.remaningMarksQuestion > 0){
+    if (examExist.remaningMarksQuestion > 0) {
       return res.status(400).json({
         status: 400,
         message: "Please add all questions before starting the exam",
@@ -193,12 +193,12 @@ export const liveExam = async (req: CustomRequest, res: Response) => {
     }
     const updateExam = await examModel.findByIdAndUpdate(
       examId,
-      { status: "live" },
+      { status: "cancelled" },
       { new: true }
     );
     return res.status(200).json({
       status: 200,
-      message: "Exam is now live",
+      message: "Exam is now cancelled",
       data: updateExam,
     });
   } catch (error: any) {
@@ -210,4 +210,3 @@ export const liveExam = async (req: CustomRequest, res: Response) => {
     });
   }
 };
-

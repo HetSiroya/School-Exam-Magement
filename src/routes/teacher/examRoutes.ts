@@ -1,7 +1,7 @@
 import express, { Response, Request, NextFunction } from "express";
 import { auth } from "../../middlewares/token-decode";
 import {
-  liveExam,
+  cancelledExam,
   setExam,
   setQuestion,
 } from "../../controllers/teacher/gradeExamController";
@@ -20,11 +20,11 @@ router.post(
 );
 
 router.post(  
-  "/liveExam/:examId",
+  "/cancelExam/:examId",
   auth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await liveExam(req, res);
+      await cancelledExam(req, res);
     } catch (error) {
       next(error);
     }

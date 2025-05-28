@@ -9,13 +9,13 @@ export const addGrade = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const userExist = await adminModel.findById(userId);
-    if (!userExist) {
-      return res.status(400).json({
-        status: 400,
-        message: "user not found",
-        data: "",
-      });
-    }
+    // if (!userExist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
     const { grade } = req.body;
     const gradeExist = await gradeModel.findOne({
       grade: grade,
@@ -72,13 +72,13 @@ export const editGrade = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const userExist = await adminModel.findById(userId);
-    if (!userExist) {
-      return res.status(400).json({
-        status: 400,
-        message: "user not found",
-        data: "",
-      });
-    }
+    // if (!userExist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
     const gradeId = req.params.id;
     const { grade } = req.body;
     const gradeExist = await gradeModel.findById(gradeId);
@@ -86,6 +86,16 @@ export const editGrade = async (req: CustomRequest, res: Response) => {
       return res.status(400).json({
         status: 400,
         message: "grade not found",
+        data: "",
+      });
+    }
+    const gradeAlreadyExist = await gradeModel.findOne({
+      grade: grade,
+    });
+    if (gradeAlreadyExist) {
+      return res.status(400).json({
+        status: 400,
+        message: "grade already exist",
         data: "",
       });
     }

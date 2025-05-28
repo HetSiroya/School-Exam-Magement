@@ -8,19 +8,20 @@ import { hashPassword } from "../../helpers/hased";
 import { generatePassword } from "../../helpers/passwordGenerator";
 import sendEmail from "../../helpers/sendMail";
 import gradeModel from "../../models/admin/gradeModel";
+import { studentWelcomeEmailTemplate } from "../../templates/studentWelcomeEmail";
 
 // add Student
 export const addStudent = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const exist = await teacherModel.findById(userId);
-    if (!exist) {
-      return res.status(400).json({
-        status: 400,
-        message: "user not found",
-        data: "",
-      });
-    }
+    // if (!exist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
     const { name, email, mobileNumber, grade } = req.body;
     const gradeExist = await gradeModel.findById(grade);
     if (!gradeExist) {
@@ -73,28 +74,8 @@ export const addStudent = async (req: CustomRequest, res: Response) => {
     await newStudent.save();
     sendEmail(
       email,
-      "added as student",
-      `Dear ${name},
-
-Welcome ! Your student account has been successfully created.
-
-Here are your login details:
-
-Username: ${newStudent.mobileNumber}  
-Password: ${password}
-
-
-Please change your password after your first login to keep your account secure.
-
-If you face any issues or have questions, feel free to contact the school administration.
-
-Wishing you a great academic journey!
-
-Best regards,  
-${exist.name}
-Email: admin@school.com  
-Phone: +91-12345-67890
-`
+      "Welcome to School Portal - Your Account Details",
+      studentWelcomeEmailTemplate(name, String(newStudent.mobileNumber), password, exist?.name || 'School Administration')
     );
     console.log("password", password);
     return res.status(200).json({
@@ -125,13 +106,13 @@ export const editStudent = async (req: CustomRequest, res: Response) => {
     const userId = req.user._id;
     const studentId = req.params.id;
     const exist = await teacherModel.findById(userId);
-    if (!exist) {
-      return res.status(400).json({
-        status: 400,
-        message: "user not found",
-        data: "",
-      });
-    }
+    // if (!exist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
     // Destructure all required fields
     const { name, email, password, mobileNumber, grade } = req.body;
 
@@ -141,6 +122,7 @@ export const editStudent = async (req: CustomRequest, res: Response) => {
     if (email !== undefined) {
       const emailExist = await studentModel.findOne({
         email: email,
+        _id: { $ne: studentId },
       });
       if (emailExist) {
         return res.status(400).json({
@@ -153,7 +135,20 @@ export const editStudent = async (req: CustomRequest, res: Response) => {
     }
     if (password !== undefined)
       updateData.password = await hashPassword(String(password));
-    if (mobileNumber !== undefined) updateData.mobileNumber = mobileNumber;
+    if (mobileNumber !== undefined) {
+      const mobileNumberExist = await studentModel.findOne({
+        mobileNumber: mobileNumber,
+        _id: { $ne: studentId },
+      });
+      if (mobileNumberExist) {
+        return res.status(400).json({
+          status: 400,
+          message: "Mobile number already exists",
+          data: "",
+        });
+      }
+      updateData.mobileNumber = mobileNumber;
+    }
     if (grade !== undefined) updateData.grade = grade;
 
     const newStudent = await studentModel.findByIdAndUpdate(
@@ -217,6 +212,31 @@ export const deleteStudent = async (req: CustomRequest, res: Response) => {
     return res.status(400).json({
       status: 400,
       message: "somethig Went wrong",
+      data: "",
+    });
+  }
+};
+
+export const getStudentsByGrade = async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user._id;
+    const gradeId = req.params.gradeId;
+    const students = await studentModel.find({
+      grade: gradeId,
+      isDeleted: false,
+    });
+    if (!students || students.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message: "No students found for this grade",
+        data: "",
+      });
+    }
+  } catch (error) {
+    console.log("Error", error);
+    return res.status(400).json({
+      status: 400,
+      message: "something Went wrong",
       data: "",
     });
   }

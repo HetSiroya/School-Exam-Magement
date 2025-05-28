@@ -2,6 +2,9 @@ import jwt, { Secret, JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 require("dotenv").config();
 import dotenv from "dotenv";
+import studentModel from "../models/student/studentDetailsModel";
+import teacherModel from "../models/teachers/teacherDetailModel";
+import adminModel from "../models/admin/adminDetailsModel";
 
 export const SECRET_KEY: Secret =
   process.env.JWT_SECRET_KEY || "gfg_jwt_secret_key";
@@ -33,7 +36,17 @@ export const auth = async (
     if (!decoded) {
       throw new Error("Invalid token");
     }
-
+    const isStudent = await studentModel.findById(decoded._id);
+    let user = isStudent;
+    if (!user) {
+      user = await teacherModel.findById(decoded._id);
+    }
+    if (!user) {
+      user = await adminModel.findById(decoded._id);
+    }
+    if (!user) {
+      throw new Error("User not found");
+    }
     req.user = decoded;
 
     next();

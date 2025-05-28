@@ -4,9 +4,10 @@ import {
   getAllExam,
   getExamById,
   getExamQuestion,
-  getExamResult,
   submitAnswer,
+  submitExam,
 } from "../../controllers/student/examController";
+import { nextTick } from "process";
 
 const router = express.Router();
 
@@ -50,13 +51,21 @@ router.get("/getExamQuestion/:examId", auth, async (req, res, next) => {
   }
 });
 
-
-router.get("/getExamResult/:examId", auth, async (req, res, next) => {
+router.get("/submitExam/:examId", auth, async (req, res, next) => {
   try {
-    await getExamResult(req, res);
+    await submitExam(req, res);
   } catch (error) {
     next(error);
   }
 });
+
+router.get('/getResult' , auth , async(req , res , next) =>{
+  try {
+    
+  } catch (error) {
+    next()
+  }
+})
+
 
 export default router;

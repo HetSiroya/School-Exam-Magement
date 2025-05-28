@@ -1,3 +1,4 @@
+import { log } from "console";
 import express from "express";
 import { Response, Request } from "express";
 import { CustomRequest } from "../../middlewares/token-decode";
@@ -7,21 +8,22 @@ import gradeModel from "../../models/admin/gradeModel";
 import schedule from "node-schedule";
 import questionModel from "../../models/teachers/questionModel";
 import answerModel from "../../models/student/answeModel";
+import resultModel from "../../models/student/resultModel";
 
 export const getAllExam = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const user = await studentModel.findById(userId);
-    if (!user) {
-      return res.status(400).json({
-        status: 400,
-        message: "User not found",
-        data: "",
-      });
-    }
+    // if (!user) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "User not found",
+    //     data: "",
+    //   });
+    // }
     const exams = await examModel.find({
       status: "live",
-      grade: user.grade,
+      grade: user?.grade,
     });
     if (!exams || exams.length === 0) {
       return res.status(404).json({
@@ -50,13 +52,13 @@ export const getExamById = async (req: CustomRequest, res: Response) => {
     const { examId } = req.params;
     const userId = req.user._id;
     const user = await studentModel.findById(userId);
-    if (!user) {
-      return res.status(400).json({
-        status: 400,
-        message: "User not found",
-        data: "",
-      });
-    }
+    // if (!user) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "User not found",
+    //     data: "",
+    //   });
+    // }
     const exam = await examModel.findById(examId);
     if (!exam) {
       return res.status(404).json({
@@ -73,7 +75,7 @@ export const getExamById = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
-    if (exam.grade.toString() !== user.grade.toString()) {
+    if (exam.grade.toString() !== user?.grade.toString()) {
       return res.status(403).json({
         status: 403,
         message: "You do not have permission to access this exam",
@@ -101,13 +103,13 @@ export const getExamQuestion = async (req: CustomRequest, res: Response) => {
     const userId = req.user._id;
     const user = await studentModel.findById(userId);
     0;
-    if (!user) {
-      return res.status(400).json({
-        status: 400,
-        message: "User not found",
-        data: "",
-      });
-    }
+    // if (!user) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "User not found",
+    //     data: "",
+    //   });
+    // }
     const exam = await examModel.findById(examId);
     if (!exam) {
       return res.status(404).json({
@@ -117,6 +119,7 @@ export const getExamQuestion = async (req: CustomRequest, res: Response) => {
       });
     }
     // Check if the exam is live
+
     if (exam.status !== "live") {
       return res.status(403).json({
         status: 403,
@@ -124,7 +127,7 @@ export const getExamQuestion = async (req: CustomRequest, res: Response) => {
         data: "",
       });
     }
-    if (exam.grade.toString() !== user.grade.toString()) {
+    if (exam.grade.toString() !== user?.grade.toString()) {
       return res.status(403).json({
         status: 403,
         message: "You do not have permission to access this exam",
@@ -138,6 +141,9 @@ export const getExamQuestion = async (req: CustomRequest, res: Response) => {
 
     // Check if the current time is within the exam period
     const now = new Date();
+    log("Current Time:", now);
+    log("Exam Start Time:", startTime);
+    log("Exam End Time:", endTime);
     if (now < startTime || now > endTime) {
       return res.status(403).json({
         status: 403,
@@ -174,13 +180,13 @@ export const submitAnswer = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const user = await studentModel.findById(userId);
-    if (!user) {
-      return res.status(400).json({
-        status: 400,
-        message: "User not found",
-        data: "",
-      });
-    }
+    // if (!user) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "User not found",
+    //     data: "",
+    //   });
+    // }
     const questionId = req.params.questionId;
     const question = await questionModel.findById(questionId);
     if (!question) {
@@ -200,12 +206,19 @@ export const submitAnswer = async (req: CustomRequest, res: Response) => {
       });
     }
 
-    // Check if exam is still ongoing
+    // Schedule the exam
+    const startTime = new Date(exam.startTime);
+    const endTime = new Date(exam.endTime);
+
+    // Check if the current time is within the exam period
     const now = new Date();
-    if (now < exam.startTime || now > exam.endTime) {
+    log("Current Time:", now);
+    log("Exam Start Time:", startTime);
+    log("Exam End Time:", endTime);
+    if (now < startTime || now > endTime) {
       return res.status(403).json({
         status: 403,
-        message: "Exam time has expired",
+        message: "Exam is not currently available",
         data: "",
       });
     }
@@ -284,48 +297,87 @@ export const submitAnswer = async (req: CustomRequest, res: Response) => {
   }
 };
 
-export const getExamResult = async (req: CustomRequest, res: Response) => {
+export const submitExam = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
-    let examMark = 0;
-    const user = await studentModel.findById(userId);
-    if (!user) {
-      return res.status(400).json({
-        status: 400,
-        message: "User not found",
+    const examId = req.params.examId;
+    // check exam exist
+    log("Exam ID:", examId);
+    const exam = await examModel.findById(examId);
+    if (!exam) {
+      return res.status(404).json({
+        status: 404,
+        message: "Exam not found",
         data: "",
       });
     }
-    const examId = req.params.examId;
-    const answers = await answerModel.find({
+    const alreadySubmitted = await resultModel.findOne({
       examId: examId,
       studentId: userId,
     });
-    const question = await questionModel.find({ examId: examId });
-    question.forEach((question) => {
-      examMark += question.mark;
-    });
-    if (!answers || answers.length === 0) {
-      return res.status(404).json({
-        status: 404,
-        message: "No answers found for this exam",
+    if (alreadySubmitted) {
+      return res.status(400).json({
+        status: 400,
+        message: "You have already submitted this exam",
         data: "",
       });
     }
-    let totalScore = 0;
-    answers.forEach((answer) => {
-      totalScore += answer.score;
+    let result = null;
+    let score = 0;
+
+    const answer = await answerModel.find({
+      examId: examId,
+      studentId: userId,
     });
+    answer.forEach((ans) => {
+      score += ans.score;
+    });
+
+    if (score >= exam.passingMarks) {
+      result = "pass";
+    } else {
+      result = "fail";
+    }
+
+    const newResult = new resultModel({
+      examId: examId,
+      studentId: userId,
+      score: score,
+      result: result,
+      grade: exam.grade,
+    });
+    await newResult.save();
+
     return res.status(200).json({
       status: 200,
-      message: "Exam result retrieved successfully",
+      message: "Exam submitted successfully",
       data: {
-        examMark: examMark,
         examId: examId,
-        totalScore: totalScore,
-        answers: answers,
+        score: score,
+        result: result,
       },
     });
+  } catch (error: any) {
+    console.log("Error", error.message);
+    return res.status(400).json({
+      status: 400,
+      message: "Something went wrong",
+      data: "",
+    });
+  }
+};
+
+export const getResults = async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user._id;
+    const result = await resultModel.find({
+      studentId: userId,
+    });
+    return res.status(200).json({
+      status : 200,
+      message : "eretrived succesfully" , 
+      data : result
+    })
   } catch (error: any) {
     console.log("Error", error.message);
     return res.status(400).json({

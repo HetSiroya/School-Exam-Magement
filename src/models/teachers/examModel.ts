@@ -65,8 +65,8 @@ const examSchema = new mongoose.Schema<IExam>(
     },
     status: {
       type: String,
-      enum: ["live", "completed", "inprogress"],
-      default: "inprogress",
+      enum: ["live", "completed" , "cancelled"],
+      default: "live",
     },
   },
   {

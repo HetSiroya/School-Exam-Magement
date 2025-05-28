@@ -1,13 +1,13 @@
 import express from "express";
 import { Response, Request, NextFunction } from "express";
 import { checkRequiredFields } from "../../helpers/commonValidator";
-
 import teacherModel from "../../models/teachers/teacherDetailModel";
 import { CustomRequest } from "../../middlewares/token-decode";
 import adminModel from "../../models/admin/adminDetailsModel";
 import { hashPassword } from "../../helpers/hased";
 import { generatePassword } from "../../helpers/passwordGenerator";
 import sendEmail from "../../helpers/sendMail";
+import { teacherWelcomeEmailTemplate } from "../../templates/teacherWelcomeEmail";
 
 const router = express.Router();
 
@@ -15,13 +15,13 @@ export const addTeacher = async (req: CustomRequest, res: Response) => {
   try {
     const userId = req.user._id;
     const exist = await adminModel.findById(userId);
-    if (!exist) {
-      return res.status(400).json({
-        status: 400,
-        message: "user not found",
-        data: "",
-      });
-    }
+    // if (!exist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
 
     const { name, email, mobileNumber } = req.body;
     const userExist = await teacherModel.findOne({
@@ -57,23 +57,12 @@ export const addTeacher = async (req: CustomRequest, res: Response) => {
     sendEmail(
       email,
       "added as teacher",
-      `Dear ${name},
-
-Welcome ! We are glad to have you join our teaching team.
-
-Your account has been successfully created. Below are your login details:
-
-Username: ${newTeacher.mobileNumber}  
-Password: ${password}
-For your security, we recommend changing your password after your first login.
-
-If you have any questions or need help getting started, feel free to reach out to us.
-
-Best regards,  
-${exist.name}
-Email: admin@school.com  
-Phone: +91-12345-67890
-`
+      teacherWelcomeEmailTemplate(
+        name,
+        String(newTeacher.mobileNumber),
+        password,
+        exist?.name || "School Administration"
+      )
     );
     return res.status(200).json({
       status: 200,
@@ -102,16 +91,27 @@ export const editTeacher = async (req: CustomRequest, res: Response) => {
     }
     const userId = req.user._id;
     const teachedId = req.params.id;
-    const exist = await adminModel.findById(userId);
-    if (!exist) {
+    // const exist = await adminModel.findById(userId);
+    // if (!exist) {
+    //   return res.status(400).json({
+    //     status: 400,
+    //     message: "user not found",
+    //     data: "",
+    //   });
+    // }
+    const { name, email, password, mobileNumber } = req.body;
+    const hasedPassword = await hashPassword(String(password));
+    const exist = await teacherModel.findOne({
+      $or: [{ email: email }, { mobileNumber: mobileNumber }],
+      _id: { $ne: teachedId },
+    });
+    if (exist) {
       return res.status(400).json({
         status: 400,
-        message: "user not found",
+        message: "user already exist",
         data: "",
       });
     }
-    const { name, email, password, mobileNumber } = req.body;
-    const hasedPassword = await hashPassword(String(password));
     const newTeacher = await teacherModel.findByIdAndUpdate(
       teachedId,
       {
